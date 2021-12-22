@@ -195,12 +195,12 @@ class Solver:
             return a+b
         elif operator == "-":
             return a-b
-        elif operator == "*":
+        elif operator == "x":
             return a*b
         elif operator == "/":
             return a/b
         else:
-            raise ValueError("Parameter operator must have one of the following values */+-")
+            raise ValueError("Parameter operator must have one of the following values x/+-")
 
     @staticmethod
     def getFinalScore(numbers, operators):
@@ -216,7 +216,7 @@ class Solver:
         if len(numbers) == 1:
             return numbers[0]
         else:
-            prod_index = operators.index("*") if "*" in operators else float("inf")
+            prod_index = operators.index("x") if "x" in operators else float("inf")
             divide_index = operators.index("/") if "/" in operators else float("inf")
 
             index = min(prod_index, divide_index)
@@ -253,7 +253,7 @@ class Solver:
             elif char == ")":
                 ind = True
 
-            if (char in "*/+-" and ind) or index == len(ex)-1:
+            if (char in "x/+-" and ind) or index == len(ex)-1:
                 end_index = index if index != len(ex) -1 else None
                 number = ex[start_index:end_index].replace("(", "").replace(")", "")
                 number = int(number)
@@ -288,7 +288,7 @@ class ExpressionGenerator:
     ExpressionGenerator Generates mathematical expressions
     """
 
-    sign_list = ["+", "-", "*", "/"]
+    sign_list = ["+", "-", "x", "/"]
 
     def __init__(self, number_of_expressions):
         self.number_of_expressions = number_of_expressions
@@ -337,7 +337,7 @@ class ExpressionGenerator:
         ex += f"({ExpressionGenerator.generateExpression()})"
         return ex
 
-    def generateExpression(self):
+    def expressionGenerator(self):
         for i in range(self.number_of_expressions):
             yield ExpressionGenerator.mergeMultipleExpression()
 
@@ -347,20 +347,20 @@ def testExpressionGenerator(num_of_tests=1000):
     A simple test for the ExpressionGenerator class
     """
     ex_gen = ExpressionGenerator(num_of_tests)
-    for generated_ex in ex_gen.generateExpression():
-        assert eval(generated_ex) == Solver.getFinalResults(generated_ex)
+    for generated_ex in ex_gen.expressionGenerator():
+        assert eval(generated_ex.replace('x', '*')) == Solver.getFinalResults(generated_ex)
 
 
-def getResult(img_path):
+def getResult(img):
     """
     A method that will return a solution for the input image
     Args:
-            img_path (str): Path to the image
+            img_path (numpy.array): Image
         Returns:
             solution (int): Solution
             expression (str): Expression
     """
-    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    
     hcd = HandwrittenCharacterDetector(img)
     cropped_images = hcd.getCroppedImages()
 
@@ -369,6 +369,5 @@ def getResult(img_path):
         hcc = HandwrittenCharacterClassifier(cropped_image['img']/255)
         character, confidence = hcc.getLabel()
         expression += character
-
     solution = Solver.getFinalResults(expression)
     return solution, expression
