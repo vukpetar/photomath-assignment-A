@@ -44,4 +44,16 @@ curl --location --request POST "127.0.0.1:9090/" --form "file=@\"[path_to_img]\"
 * Testing Notebook [Local].ipynb -  If you want to test code locally in jupyter lab, it is recommended to install Conca env with all packages and run this notebook.
 * Train_Classifier [Google Colab].ipynb - If you want to start model training, it is recommended that you run this nodebook on Google Collaborate.
 
+## Discussion
+
+The table below shows the results of the experiments, you can see more details in `Train_Classifier [Google Colab].ipynb` notebook.
+
+| Fold # | Accracy |
+| --- | --- |
+| 1 | 0.9938 |
+| 2 | 0.9941  |
+| 3 | 0.9941  |
+| 4 | 0.9943  |
+| 5 | 0.9944  |
+
 This is a very simple project that transforms an image of a mathematical expression into a string and then calculates the value of that expression. The first assumption is that the input is a white paper with a written expression, which is far from the real situation. The first thing I would suggest is to create a segmentation network that would detect the text in the image (if there is any text at all :)). After that, the results of the classification network can be improved by augmenting the input dataset. After that, an algorithm for postprocessing data can be added because some of the classes are very similar (such as `1` and `/`) and it is difficult to do with the classifier only, but it is possible with certain algorithms such as (RNN, Rule Based, GNN, ensembles of previous algorithms of etc.).
