@@ -21,11 +21,6 @@ class HandwrittenCharacterDetector:
 
         (self.thresh, self.im_bw) = cv2.threshold(normed, 100, 255, cv2.THRESH_OTSU)
         self.im_bw = 255 - self.im_bw
-
-        if np.mean(self.img) > 127:
-            # Assuming most of the image is background, if the background is light the image 
-            # is inverted so that the background is dark and the handwritten text is bright
-            self.img = 255 - self.img
         self.img_h, self.img_w = self.img.shape[:2]
 
         self.contours, _ = cv2.findContours(self.im_bw, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -377,13 +372,13 @@ def getResult(img):
     hcd = HandwrittenCharacterDetector(img)
     cropped_images = hcd.getCroppedImages()
 
-    expression = ''
+    expression, solution, exception = '', None, None
     for cropped_image in cropped_images:
         hcc = HandwrittenCharacterClassifier(cropped_image['img']/255)
         character, confidence = hcc.getLabel()
         expression += character
     try:
         solution = Solver.getFinalResults(expression)
-    except:
-        solution = None
-    return solution, expression
+    except Exception as e:
+        exception = str(e)
+    return solution, expression, exception
