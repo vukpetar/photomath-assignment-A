@@ -13,12 +13,20 @@ class HandwrittenCharacterDetector:
         if len(img.shape) > 2:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         self.img = img
+
+        blured1 = cv2.medianBlur(self.img, 3)
+        blured2 = cv2.medianBlur(self.img, 51)
+        divided = np.ma.divide(blured1, blured2).data
+        normed = np.uint8(255*divided/divided.max())
+
+        (self.thresh, self.im_bw) = cv2.threshold(normed, 100, 255, cv2.THRESH_OTSU)
+        self.im_bw = 255 - self.im_bw
+
         if np.mean(self.img) > 127:
             # Assuming most of the image is background, if the background is light the image 
             # is inverted so that the background is dark and the handwritten text is bright
             self.img = 255 - self.img
         self.img_h, self.img_w = self.img.shape[:2]
-        (self.thresh, self.im_bw) = cv2.threshold(self.img, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
         self.contours, _ = cv2.findContours(self.im_bw, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
@@ -169,7 +177,7 @@ class Solver:
             elif char == ")":
                 end_index = index
                 try:
-                    int(ex[start_index:end_index])
+                    float(ex[start_index:end_index])
                     start_index, end_index = old_start_index, len(ex)
                     continue
                 except:
@@ -254,9 +262,9 @@ class Solver:
                 ind = True
 
             if (char in "x/+-" and ind) or index == len(ex)-1:
-                end_index = index if index != len(ex) -1 else None
+                end_index = index if index != len(ex) - 1 else None
                 number = ex[start_index:end_index].replace("(", "").replace(")", "")
-                number = int(number)
+                number = float(number)
                 numbers.append(number)
                 if index != len(ex) -1:
                     operators.append(char)
@@ -279,7 +287,7 @@ class Solver:
         else:
             ex_without_brackets = ex[indexes[0]:indexes[1]]
             new_value = Solver.calculateWithoutBrackets(ex_without_brackets)
-            new_value = str(new_value) if new_value > 0 else f"({new_value})"
+            new_value = format(new_value, 'f') if new_value > 0 else f"({format(new_value, 'f')})"
             new_ex = ex[:indexes[0]-1] + new_value + ex[indexes[1]+1:]
             return Solver.getFinalResults(new_ex)
 
@@ -348,7 +356,12 @@ def testExpressionGenerator(num_of_tests=1000):
     """
     ex_gen = ExpressionGenerator(num_of_tests)
     for generated_ex in ex_gen.expressionGenerator():
-        assert eval(generated_ex.replace('x', '*')) == Solver.getFinalResults(generated_ex)
+        eval_value = float(eval(generated_ex.replace('x', '*')))
+        solver_value = float(Solver.getFinalResults(generated_ex))
+        try:
+            np.testing.assert_almost_equal(eval_value, solver_value, decimal=5)
+        except:
+            print(eval_value, solver_value)
 
 
 def getResult(img):
@@ -369,5 +382,8 @@ def getResult(img):
         hcc = HandwrittenCharacterClassifier(cropped_image['img']/255)
         character, confidence = hcc.getLabel()
         expression += character
-    solution = Solver.getFinalResults(expression)
+    try:
+        solution = Solver.getFinalResults(expression)
+    except:
+        solution = None
     return solution, expression
