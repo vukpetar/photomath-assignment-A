@@ -2,7 +2,7 @@ import os
 import numpy as np
 import cv2
 from flask import Flask, jsonify, request
-from utils import HandwrittenCharacterDetector, HandwrittenCharacterClassifier, Solver
+from utils import getResult
 
 app = Flask(__name__)
 
@@ -19,21 +19,15 @@ def extract_entities():
         # decode image
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        hcd = HandwrittenCharacterDetector(img)
-        cropped_images = hcd.getCroppedImages()
-
-        expression = ''
-        for cropped_image in cropped_images:
-            hcc = HandwrittenCharacterClassifier(cropped_image['img']/255)
-            character, confidence = hcc.getLabel()
-            expression += character
-
-        solution = Solver.getFinalResults(expression)
+        solution, expression, exception = getResult(img)
         result = {
             "expression": expression,
-            "solution": solution
-
         }
+        if solution:
+            result["solution"] = solution
+        if exception:
+            result["exception"] = exception
+
     except Exception as e:
         result.append(str(e))
     return jsonify(result)
