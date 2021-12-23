@@ -164,12 +164,14 @@ class Solver:
         """
 
         start_index, end_index = 0, len(ex)
-        end_index = len(ex)
+        open_brackets = 0
         for index, char in enumerate(ex):
             if char == "(":
+                open_brackets += 1
                 old_start_index = start_index
                 start_index = index + 1
             elif char == ")":
+                open_brackets -=1
                 end_index = index
                 try:
                     float(ex[start_index:end_index])
@@ -177,6 +179,8 @@ class Solver:
                     continue
                 except:
                     pass
+                if open_brackets < 0:
+                    raise ValueError("The brackets must be opened")
                 return start_index, end_index
         if start_index != 0:
             raise ValueError("The brackets must be closed")
