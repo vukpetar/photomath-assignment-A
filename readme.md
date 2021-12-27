@@ -12,6 +12,11 @@ If you want to run locally
 * Flask==2.0.1
 * gunicorn==20.1.0
 * tensorflow===2.7.0
+* torch===2.7.0
+* transformers==4.12.3
+* sentencepiece==0.1.96
+* Pillow==7.2.0
+* torch==1.10.1+cpu
 * numpy==1.19.3
 * opencv-python==4.5.4.58
 
@@ -39,6 +44,11 @@ docker run --rm -p 9090:8080 -e PORT=8080 photomath:python
 curl --location --request POST "127.0.0.1:9090/" --form "file=@\"[path_to_img]\""
 ```
 
+If you want to test tranformers model:
+```curl
+curl --location --request POST "127.0.0.1:9090/transformers" --form "file=@\"[path_to_img]\""
+```
+
 ## Jupyter notebooks
 
 * `Testing Notebook [Local].ipynb` -  If you want to test code locally in jupyter lab, it is recommended to install Conda env with all packages and run this notebook.
@@ -46,7 +56,7 @@ curl --location --request POST "127.0.0.1:9090/" --form "file=@\"[path_to_img]\"
 
 ## Discussion
 
-The table below shows the results of the experiments, you can see more details in `Train_Classifier [Google Colab].ipynb` notebook.
+The table below shows the results of the experiments, you can see more details in `Train_Classifier [Google Colab].ipynb` and `Train_Tranformers [Google Colab]` notebooks.
 
 | Fold # | Accuracy |
 | --- | --- |

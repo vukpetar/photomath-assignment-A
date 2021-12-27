@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
 import tensorflow as tf
+from transformers import VisionEncoderDecoderModel, AutoFeatureExtractor, AutoTokenizer
+from PIL import Image
 
 
 class HandwrittenCharacterDetector:
@@ -20,10 +22,15 @@ class HandwrittenCharacterDetector:
         normed = np.uint8(255*divided/divided.max())
 
         (self.thresh, self.im_bw) = cv2.threshold(normed, 100, 255, cv2.THRESH_OTSU)
-        self.im_bw = 255 - self.im_bw
         self.img_h, self.img_w = self.img.shape[:2]
 
-        self.contours, _ = cv2.findContours(self.im_bw, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    def getBinaryImage(self):
+        """
+        Return binary image
+        Return:
+            image (numpy.array) : Binary image
+        """
+        return self.im_bw
 
     def getCroppedImages(self):
         """
@@ -34,6 +41,7 @@ class HandwrittenCharacterDetector:
         """
 
         result = []
+        self.contours, _ = cv2.findContours(255 - self.im_bw, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         for contour in self.contours:
             w_min, h_min = np.min(contour, axis=0)[0]
             w_max, h_max = np.max(contour, axis=0)[0]
@@ -142,6 +150,35 @@ class HandwrittenCharacterClassifier:
         label = HandwrittenCharacterClassifier.id2label[np.argmax(prediction)]
         confidence = np.max(prediction)
         return label, confidence
+
+class HandwrittenImageClassifier:
+    """
+    HandwrittenImageClassifier receives an image of the expression
+    and return the corresponding string.
+    """
+
+    feature_extractor = AutoFeatureExtractor.from_pretrained('vukpetar/trocr-small-photomath')
+    tokenizer = AutoTokenizer.from_pretrained("vukpetar/trocr-small-photomath")
+    model = VisionEncoderDecoderModel.from_pretrained('vukpetar/trocr-small-photomath')
+    
+    def __init__(self, img):
+        self.img = img
+
+    
+    def getExpression(self):
+        """
+        Converts input image to expression (str).
+        Returns:
+            expression (str): Expression
+        """
+
+        image = Image.fromarray(self.img.astype(np.uint8)).convert("RGB")
+
+        pixel_values = HandwrittenImageClassifier.feature_extractor(images=image, return_tensors="pt").pixel_values
+
+        generated_ids = HandwrittenImageClassifier.model.generate(pixel_values)
+        expression = HandwrittenImageClassifier.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        return expression
 
 class Solver:
     """
@@ -355,8 +392,11 @@ def testExpressionGenerator(num_of_tests=1000):
     """
     ex_gen = ExpressionGenerator(num_of_tests)
     for generated_ex in ex_gen.expressionGenerator():
-        eval_value = float(eval(generated_ex.replace('x', '*')))
-        solver_value = float(Solver.getFinalResults(generated_ex))
+        try:
+            eval_value = float(eval(generated_ex.replace('x', '*')))
+            solver_value = float(Solver.getFinalResults(generated_ex))
+        except ZeroDivisionError:
+            continue
         try:
             np.testing.assert_almost_equal(eval_value, solver_value, decimal=5)
         except:
@@ -381,6 +421,28 @@ def getResult(img):
         hcc = HandwrittenCharacterClassifier(cropped_image['img']/255)
         character, confidence = hcc.getLabel()
         expression += character
+    try:
+        solution = Solver.getFinalResults(expression)
+    except Exception as e:
+        exception = str(e)
+    return solution, expression, exception
+
+def getTransformersResult(img):
+    """
+    A method that will return a solution for the input image with transformers model
+    Args:
+            img_path (numpy.array): Image
+        Returns:
+            solution (int): Solution
+            expression (str): Expression
+    """
+    
+    hcd = HandwrittenCharacterDetector(img)
+    binary_image = hcd.getBinaryImage()
+
+    expression, solution, exception = '', None, None
+    hic = HandwrittenImageClassifier(binary_image)
+    expression = hic.getExpression()
     try:
         solution = Solver.getFinalResults(expression)
     except Exception as e:

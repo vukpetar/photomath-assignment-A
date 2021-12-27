@@ -2,14 +2,14 @@ import os
 import numpy as np
 import cv2
 from flask import Flask, jsonify, request
-from utils import getResult
+from utils import getResult, getTransformersResult
 
 app = Flask(__name__)
 
 model_path = "./model"
 
 @app.route('/', methods=['POST'])
-def extract_entities():
+def solve_expression():
     
     result = []
     if request.files['file'] is None:
@@ -20,6 +20,30 @@ def extract_entities():
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         solution, expression, exception = getResult(img)
+        result = {
+            "expression": expression,
+        }
+        if solution:
+            result["solution"] = solution
+        if exception:
+            result["exception"] = exception
+
+    except Exception as e:
+        result.append(str(e))
+    return jsonify(result)
+
+@app.route('/transformers', methods=['POST'])
+def solve_expression_with_transformers():
+    
+    result = []
+    if request.files['file'] is None:
+        return jsonify(code=403, message="bad request")
+    try:
+        nparr = np.fromstring(request.files['file'].read(), np.uint8)
+        # decode image
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        solution, expression, exception = getTransformersResult(img)
         result = {
             "expression": expression,
         }
