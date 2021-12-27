@@ -308,10 +308,10 @@ class ExpressionGenerator:
             result (str): Mathematical expression
         """
 
-        number_of_operatoins = np.random.randint(3, 10)
+        number_of_operatoins = np.random.randint(1, 5)
         numbers = np.random.randint(-1000, 1000, size=number_of_operatoins+1).astype(str)
 
-        sign_pos = np.random.randint(3, size=number_of_operatoins)
+        sign_pos = np.random.randint(4, size=number_of_operatoins)
         signs = [ExpressionGenerator.sign_list[sign] for sign in sign_pos]
 
         ex = ""
